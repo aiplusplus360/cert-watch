@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Doctests
+        run: python -m doctest certwatch/core.py -v
+
+      - name: CLI contract
+        run: |
+          cert-watch --version
+          cert-watch parse examples/chain.pem
+          cert-watch parse examples/leaf.der --format json > /dev/null
+
+      - name: A short-lived leaf is reported
+        run: |
+          cert-watch parse examples/chain.pem --warn-days 400 --fail-on warn > /dev/null
+          test $? -eq 1
+
+      - name: The DER reader is exercised without a crypto dependency
+        run: |
+          python - <<'PY'
+          from certwatch.core import parse_certificate, load_certificates
+
+          with open("examples/leaf.der", "rb") as handle:
+              certificate = parse_certificate(handle.read())
+          assert certificate.common_name() == "api.example.com", certificate.subject
+          assert "api.example.com" in certificate.hostnames
+          assert certificate.covers("api.example.com")
+          assert not certificate.is_ca
+          with open("examples/chain.pem", "rb") as handle:
+              chain = load_certificates(handle.read(), "chain.pem")
+          assert [c.common_name() for c in chain][0] == "api.example.com"
+          assert chain[1].is_ca
+          print("parsed", len(chain), "certificates")
+          PY

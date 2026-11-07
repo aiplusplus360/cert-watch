@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cert-watch"
+version = "0.1.0"
+description = "Certificate expiry and chain checks from a dependency-free X.509 parser."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "khawajasafiullah18" }]
+dependencies = []
+keywords = ["tls", "x509", "certificates", "monitoring", "devops"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Systems Administration",
+  "Environment :: Console",
+]
+
+[project.urls]
+Homepage = "https://github.com/aiplusplus360/cert-watch"
+
+[project.scripts]
+cert-watch = "certwatch.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["certwatch*"]
