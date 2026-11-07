@@ -41,8 +41,12 @@ jobs:
 
       - name: A short-lived leaf is reported
         run: |
-          cert-watch parse examples/chain.pem --warn-days 400 --fail-on warn > /dev/null
-          test $? -eq 1
+          set +e
+          cert-watch parse examples/chain.pem --warn-days 400 --fail-on warn
+          code=$?
+          set -e
+          echo "exit code: $code"
+          test "$code" -eq 1
 
       - name: The DER reader is exercised without a crypto dependency
         run: |
